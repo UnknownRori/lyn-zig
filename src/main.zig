@@ -1,7 +1,11 @@
 const std = @import("std");
-
 const lib = @import("lyn_zig_lib");
 
 pub fn main() !void {
-    std.debug.print("Hello, World\n", .{});
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var server = try lib.Server.init(allocator, lib.ServerConfig.init("127.0.0.1", 8000));
+    try server.listen();
 }
