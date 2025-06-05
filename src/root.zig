@@ -4,6 +4,14 @@ const builtin = @import("builtin");
 const net = @import("std").net;
 const stdout = std.io.getStdOut().writer();
 
+pub const REQUEST_MAX_BUFFER = 2048;
+pub const HTTPMethod = enum {
+    GET,
+    POST,
+    DELETE,
+    PATCH,
+};
+
 pub const ServerConfig = struct {
     host: []const u8,
     port: u16,
@@ -50,10 +58,89 @@ pub const Server = struct {
 
             try stdout.print("Connected to new client - {}", .{client.address});
 
-            const message = try client.stream.reader().readAllAlloc(self._allocator, 1024);
-            defer self._allocator.free(message);
+            const buffer = try client.stream.reader().readAllAlloc(self._allocator, REQUEST_MAX_BUFFER);
+            defer self._allocator.free(buffer);
 
-            try stdout.print("{} says {s}\n", .{ client.address, message });
+            const message = "HTTP/1.1 200 OK\n";
+            const writer = client.stream.writer();
+            try writer.writeAll(message);
+
+            // try self.handleRequest(client.stream, buffer);
         }
     }
+
+    // ------- INTERNAL FUNCTION -------
+
+    fn handleRequest(self: *Self, stream: net.Stream, buffer: []const u8) !void {
+        const request = try Request.parseFromBuffer(self._allocator, buffer);
+        _ = request;
+
+        try stream.writeAll("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 1\n\nA");
+    }
 };
+
+/// This struct hold information about the client request
+/// All of the content is dynamically allocated and it will deallocated automatically
+/// when the request is completed
+pub const Request = struct {
+    userAgent: []const u8,
+    method: HTTPMethod,
+    path: []const u8,
+    body: []const u8,
+    params: std.ArrayList([]const u8),
+    /// Inherited from [`Server`] if it's created by [`Server`]
+    _allocator: mem.Allocator,
+
+    const Self = @This();
+
+    // ------- INTERNAL FUNCTION -------
+
+    /// This function will parse
+    pub fn parseFromBuffer(allocator: mem.Allocator, buffer: []const u8) !Self {
+        var split = mem.splitSequence(u8, buffer, "\r\n\r\n");
+
+        const header = split.peek().?;
+        const headerStr = try createStringFromSlice(allocator, header);
+        var headerToken = mem.splitSequence(u8, headerStr.items, "\r\n");
+        var userAgent: []const u8 = "";
+        var method: HTTPMethod = .GET;
+        var path: []const u8 = "";
+        const params = std.ArrayList([]const u8).init(allocator);
+
+        while (headerToken.next()) |token| {
+            if (mem.startsWith(u8, token, "User-Agent:")) {
+                var splitToken = mem.splitSequence(u8, token, ":");
+                userAgent = splitToken.next().?;
+            }
+            if (mem.startsWith(u8, token, "GET")) {
+                var splitToken = mem.splitSequence(u8, token, " ");
+                path = splitToken.next().?;
+                method = .GET;
+            }
+            if (mem.startsWith(u8, token, "POST")) {
+                var splitToken = mem.splitSequence(u8, token, " ");
+                path = splitToken.next().?;
+                method = .POST;
+            }
+
+            try stdout.print("Parsed {s}", .{token});
+        }
+
+        const body = split.next().?;
+        return Self{
+            .userAgent = userAgent,
+            .path = path,
+            .method = method,
+            .body = body,
+            .params = params,
+            ._allocator = allocator,
+        };
+    }
+};
+
+// ------- INTERNAL FUNCTION -------
+fn createStringFromSlice(allocator: mem.Allocator, buffer: []const u8) !std.ArrayList(u8) {
+    var str = try std.ArrayList(u8).initCapacity(allocator, buffer.len);
+    try str.appendSlice(buffer);
+    return str;
+}
