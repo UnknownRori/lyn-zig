@@ -4,6 +4,19 @@ const builtin = @import("builtin");
 const net = @import("std").net;
 const stdout = std.io.getStdOut().writer();
 
+// Refrences for HTTP Request
+// Host: localhost:8000
+// User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+// Accept: */*
+// Accept-Language: en,en-GB;q=0.8,ja;q=0.5,de;q=0.3
+// Accept-Encoding: gzip, deflate, br, zstd
+// DNT: 1
+// Connection: keep-alive
+// Cookie: phpMyAdmin=cb2bda84366332b27a9bfa73c805180f
+// Sec-Fetch-Dest: empty
+// Sec-Fetch-Mode: cors
+// Sec-Fetch-Site: same-origin
+
 pub const REQUEST_MAX_BUFFER = 2048;
 pub const HTTPMethod = enum {
     GET,
@@ -49,23 +62,20 @@ pub const Server = struct {
 
     pub fn listen(self: *Self) !void {
         self._server = try self._socket.listen(.{ .reuse_address = true });
-        try stdout.print("Listening on http://{}", .{self._server.listen_address});
+        try stdout.print("Listening on http://{}\n", .{self._server.listen_address});
         defer self._server.deinit();
 
         while (true) {
             const client = try self._server.accept();
             defer client.stream.close();
 
-            try stdout.print("Connected to new client - {}", .{client.address});
-
-            const buffer = try client.stream.reader().readAllAlloc(self._allocator, REQUEST_MAX_BUFFER);
+            try stdout.print("Connected to new client - {}\n", .{client.address});
+            const buffer = try self._allocator.alloc(u8, REQUEST_MAX_BUFFER);
             defer self._allocator.free(buffer);
 
-            const message = "HTTP/1.1 200 OK\n";
-            const writer = client.stream.writer();
-            try writer.writeAll(message);
+            _ = try client.stream.read(buffer);
 
-            // try self.handleRequest(client.stream, buffer);
+            try self.handleRequest(client.stream, buffer);
         }
     }
 
@@ -122,8 +132,6 @@ pub const Request = struct {
                 path = splitToken.next().?;
                 method = .POST;
             }
-
-            try stdout.print("Parsed {s}", .{token});
         }
 
         const body = split.next().?;
