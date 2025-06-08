@@ -8,4 +8,7 @@ pub fn main() !void {
 
     var server = try lib.Server.init(allocator, lib.ServerConfig.init("127.0.0.1", 8000));
     try server.listen();
+
+    const leaks = gpa.detectLeaks();
+    std.debug.print("has leaks : {}", .{leaks});
 }
