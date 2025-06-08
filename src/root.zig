@@ -7,6 +7,7 @@ const routerLib = @import("app/router.zig");
 
 pub const Server = serverLib.Server;
 pub const ServerConfig = serverLib.ServerConfig;
+pub const OnRequestHandler = serverLib.OnRequestHandler;
 pub const Request = requestLib.Request;
 pub const Response = responseLib.Response;
 pub const HTTPMethod = httpLib.HTTPMethod;

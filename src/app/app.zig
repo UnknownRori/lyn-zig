@@ -42,12 +42,9 @@ pub const App = struct {
     }
 
     // ------- INTERNAL FUNCTION -------
-    fn handler(ctx: *anyopaque, _: root.Request, res: *root.Response) anyerror!void {
+    fn handler(ctx: *anyopaque, req: root.Request, res: *root.Response) anyerror!void {
         const self: *Self = @alignCast(@ptrCast(ctx));
-        _ = self;
 
-        _ = try res.json(root.HTTPStatus.Ok, .{
-            .message = "Hello World!",
-        });
+        try self._router.resolve(req, res);
     }
 };
