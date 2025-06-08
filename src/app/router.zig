@@ -60,6 +60,14 @@ const Handler = struct {
             .method = method,
         };
     }
+
+    pub fn call(self: Self, req: root.Request, res: *root.Response) !void {
+        try @call(.auto, @as(BoundHandler, @ptrFromInt(self.handler)), .{
+            @as(*anyopaque, @ptrFromInt(self.instance)),
+            req,
+            res,
+        });
+    }
 };
 
 pub const Router = struct {
@@ -102,10 +110,6 @@ pub const Router = struct {
         // TODO : resolve the route properly
         const handler = self._routes.getLast();
 
-        try @call(.auto, @as(BoundHandler, @ptrFromInt(handler.handler)), .{
-            @as(*anyopaque, @ptrFromInt(handler.instance)),
-            req,
-            res,
-        });
+        try handler.call(req, res);
     }
 };
