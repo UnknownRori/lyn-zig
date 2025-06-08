@@ -39,6 +39,7 @@ pub const Response = struct {
     /// NOTE : DO NOT USE THIS FUNCTION SINCE IT'S FOR INTERNAL USE ONLY
     pub fn send(self: Self, stream: std.net.Stream) !void {
         var strResponse = try std.ArrayList(u8).initCapacity(self._allocator, 1024);
+        defer strResponse.deinit();
 
         const httpCode = try std.fmt.allocPrint(self._allocator, "HTTP/1.1 {} {s}\r\n", .{ @intFromEnum(self.status), "OK" });
         try strResponse.appendSlice(httpCode);
