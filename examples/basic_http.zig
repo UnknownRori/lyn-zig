@@ -6,12 +6,7 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    const router = lib.Router.init();
-    var server = try lib.App.init(allocator, lib.AppConfig{
-        .port = 8000,
-        .host = "127.0.0.1",
-        .router = router,
-    });
+    var server = try lib.Server.init(allocator, lib.ServerConfig.init("127.0.0.1", 8000));
     try server.listen();
 
     const leaks = gpa.detectLeaks();

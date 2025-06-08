@@ -11,17 +11,19 @@ const responseLib = @import("response.zig");
 const Response = responseLib.Response;
 
 pub const REQUEST_MAX_BUFFER = 2048;
+pub const OnRequestHandler = *const fn (ctx: *anyopaque, req: Request, res: *Response) anyerror!void;
 
-// fn defaultResponse(_: Request, res: Response) !Response {
-//     return try res.json(200, struct {
-//         message: "Hello World!",
-//     });
-// }
+fn defaultResponse(_: *anyopaque, _: Request, res: *Response) anyerror!void {
+    _ = try res.json(http.HTTPStatus.Ok, .{
+        .message = "Hello World!",
+    });
+}
 
 pub const ServerConfig = struct {
     host: []const u8,
     port: u16,
-    // onRequest: fn (req: Request, res: Response) ?Response,
+    onRequest: OnRequestHandler,
+    ctx: *anyopaque,
     const Self = @This();
 
     /// Init the [`ServerConfig`] with default configuration
@@ -30,7 +32,8 @@ pub const ServerConfig = struct {
         return Self{
             .host = host,
             .port = port,
-            // .onRequest = defaultResponse,
+            .onRequest = &defaultResponse,
+            .ctx = undefined,
         };
     }
 };
@@ -40,7 +43,9 @@ pub const Server = struct {
     _socket: net.Address,
     _server: net.Server,
     _allocator: mem.Allocator,
-    // _onRequest: fn (req: Request) void,
+
+    _onRequest: OnRequestHandler,
+    _ctx: *anyopaque,
     const Self = @This();
 
     /// This function create server and this function require allocator
@@ -56,6 +61,8 @@ pub const Server = struct {
             ._socket = socket,
             ._server = undefined,
             ._allocator = allocator,
+            ._onRequest = config.onRequest,
+            ._ctx = config.ctx,
         };
     }
 
@@ -83,11 +90,7 @@ pub const Server = struct {
     fn handleRequest(self: *Self, stream: net.Stream, buffer: []const u8) !void {
         const request = try Request.parseFromBuffer(self._allocator, buffer);
         var response = Response.init(self._allocator);
-        _ = try response.json(http.HTTPStatus.Ok, .{
-            .name = "Hello, World",
-        });
-        _ = request;
-        // response = self._onRequest(request, response);
+        try self._onRequest(self._ctx, request, &response);
 
         try response.send(stream);
         response.deinit();
