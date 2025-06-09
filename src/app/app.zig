@@ -42,7 +42,7 @@ pub const App = struct {
     }
 
     // ------- INTERNAL FUNCTION -------
-    fn handler(ctx: *anyopaque, req: root.Request, res: *root.Response) anyerror!void {
+    fn handler(ctx: *anyopaque, req: *root.Request, res: *root.Response) anyerror!void {
         const self: *Self = @alignCast(@ptrCast(ctx));
 
         try self._router.resolve(req, res);

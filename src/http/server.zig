@@ -4,6 +4,8 @@ const builtin = @import("builtin");
 const net = @import("std").net;
 const stdout = std.io.getStdOut().writer();
 
+const datetime = @import("datetime");
+
 const http = @import("http.zig");
 const requestLib = @import("request.zig");
 const Request = requestLib.Request;
@@ -11,9 +13,9 @@ const responseLib = @import("response.zig");
 const Response = responseLib.Response;
 
 pub const REQUEST_MAX_BUFFER = 2048;
-pub const OnRequestHandler = *const fn (ctx: *anyopaque, req: Request, res: *Response) anyerror!void;
+pub const OnRequestHandler = *const fn (ctx: *anyopaque, req: *Request, res: *Response) anyerror!void;
 
-fn defaultResponse(_: *anyopaque, _: Request, res: *Response) anyerror!void {
+fn defaultResponse(_: *anyopaque, _: *Request, res: *Response) anyerror!void {
     _ = try res.json(http.HTTPStatus.Ok, .{
         .message = "Hello World!",
     });
@@ -75,7 +77,6 @@ pub const Server = struct {
             const client = try self._server.accept();
             defer client.stream.close();
 
-            try stdout.print("Connected to new client - {}\n", .{client.address});
             const buffer = try self._allocator.alloc(u8, REQUEST_MAX_BUFFER);
             defer self._allocator.free(buffer);
 
@@ -88,9 +89,21 @@ pub const Server = struct {
     // ------- INTERNAL FUNCTION -------
 
     fn handleRequest(self: *Self, stream: net.Stream, buffer: []const u8) !void {
-        const request = try Request.parseFromBuffer(self._allocator, buffer);
+        var request = try Request.parseFromBuffer(self._allocator, buffer);
         var response = Response.init(self._allocator);
-        try self._onRequest(self._ctx, request, &response);
+        const time = datetime.datetime.Datetime.now();
+
+        try stdout.print("[{:0>2}-{:0>2}-{:0>4} {:0>2}:{:0>2}:{:0>2}] {s} {s}\n", .{
+            time.date.day,
+            time.date.month,
+            time.date.year,
+            time.time.hour,
+            time.time.minute,
+            time.time.second,
+            request.method.toString(),
+            request.path,
+        });
+        try self._onRequest(self._ctx, &request, &response);
 
         try response.send(stream);
         response.deinit();

@@ -14,7 +14,7 @@ pub const Response = struct {
 
     pub fn init(allocator: mem.Allocator) Self {
         return Self{
-            .status = HTTPStatus.Ok,
+            .status = HTTPStatus.NotFound,
             .contentType = null,
             .body = null,
             ._allocator = allocator,
@@ -41,7 +41,10 @@ pub const Response = struct {
         var strResponse = try std.ArrayList(u8).initCapacity(self._allocator, 1024);
         defer strResponse.deinit();
 
-        const httpCode = try std.fmt.allocPrint(self._allocator, "HTTP/1.1 {} {s}\r\n", .{ @intFromEnum(self.status), "OK" });
+        const httpCode = try std.fmt.allocPrint(self._allocator, "HTTP/1.1 {} {s}\r\n", .{
+            @intFromEnum(self.status),
+            self.status.toString(),
+        });
         try strResponse.appendSlice(httpCode);
         self._allocator.free(httpCode);
 

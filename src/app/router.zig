@@ -3,7 +3,7 @@ const mem = std.mem;
 
 const root = @import("../root.zig");
 
-const BoundHandler = *fn (*const anyopaque, root.Request, *root.Response) anyerror!void;
+const BoundHandler = *fn (*const anyopaque, *root.Request, *root.Response) anyerror!void;
 
 const Handler = struct {
     /// Function pointer of the instance
@@ -30,13 +30,13 @@ const Handler = struct {
                 @compileError("Expected handler to have three paramters");
             }
             const arg_type1 = f.params[1].type.?;
-            if (arg_type1 != root.Request) {
-                @compileError("Expected handler's second argument to be of type lyn.Response. Found " ++
+            if (arg_type1 != *root.Request) {
+                @compileError("Expected handler's second argument to be of type *lyn.Request. Found " ++
                     @typeName(arg_type1));
             }
             const arg_type2 = f.params[2].type.?;
             if (arg_type2 != *root.Response) {
-                @compileError("Expected handler's third argument to be of type lyn.Response. Found " ++
+                @compileError("Expected handler's third argument to be of type *lyn.Response. Found " ++
                     @typeName(arg_type2));
             }
 
@@ -61,7 +61,28 @@ const Handler = struct {
         };
     }
 
-    pub fn call(self: Self, req: root.Request, res: *root.Response) !void {
+    pub fn isMatch(self: Self, req: *root.Request) bool {
+        if (self.method != req.method) return false;
+
+        var handlerUrl = std.mem.splitSequence(u8, self.path, "/");
+        var requestUrl = std.mem.splitSequence(u8, req.path, "/");
+
+        while (requestUrl.next()) |reqUrl| {
+            const handUrl = handlerUrl.next();
+            if (handUrl == null) return false;
+
+            if (std.mem.eql(u8, handUrl.?, reqUrl)) {
+                //
+            } else if (std.mem.startsWith(u8, handUrl.?, "{") and std.mem.endsWith(u8, handUrl.?, "}")) {
+                // Parse the params
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    pub fn call(self: Self, req: *root.Request, res: *root.Response) !void {
         try @call(.auto, @as(BoundHandler, @ptrFromInt(self.handler)), .{
             @as(*anyopaque, @ptrFromInt(self.instance)),
             req,
@@ -106,10 +127,12 @@ pub const Router = struct {
         try self._routes.append(handlerObj);
     }
 
-    pub fn resolve(self: *Self, req: root.Request, res: *root.Response) !void {
-        // TODO : resolve the route properly
-        const handler = self._routes.getLast();
-
-        try handler.call(req, res);
+    pub fn resolve(self: *Self, req: *root.Request, res: *root.Response) !void {
+        for (self._routes.items) |route| {
+            if (route.isMatch(req)) {
+                try route.call(req, res);
+            }
+        }
+        // Call 404
     }
 };

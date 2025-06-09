@@ -40,12 +40,23 @@ pub const Request = struct {
             if (mem.startsWith(u8, token, "GET")) {
                 var splitToken = mem.splitSequence(u8, token, " ");
                 path = splitToken.next().?;
+                path = splitToken.next().?;
                 method = .GET;
             }
             if (mem.startsWith(u8, token, "POST")) {
                 var splitToken = mem.splitSequence(u8, token, " ");
                 path = splitToken.next().?;
                 method = .POST;
+            }
+            if (mem.startsWith(u8, token, "PATCH")) {
+                var splitToken = mem.splitSequence(u8, token, " ");
+                path = splitToken.next().?;
+                method = .PATCH;
+            }
+            if (mem.startsWith(u8, token, "DELETE")) {
+                var splitToken = mem.splitSequence(u8, token, " ");
+                path = splitToken.next().?;
+                method = .DELETE;
             }
         }
 
