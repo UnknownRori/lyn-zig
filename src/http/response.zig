@@ -8,6 +8,7 @@ pub const Response = struct {
     status: HTTPStatus,
     contentType: ?[]const u8,
     body: ?[]const u8,
+    headers: std.StringHashMap([]const u8),
     _allocator: mem.Allocator,
 
     const Self = @This();
@@ -17,6 +18,7 @@ pub const Response = struct {
             .status = HTTPStatus.NotFound,
             .contentType = null,
             .body = null,
+            .headers = std.StringHashMap([]const u8).init(allocator),
             ._allocator = allocator,
         };
     }
@@ -46,7 +48,7 @@ pub const Response = struct {
             self.status.toString(),
         });
         try strResponse.appendSlice(httpCode);
-        self._allocator.free(httpCode);
+        defer self._allocator.free(httpCode);
 
         if (self.body != null) {
             const contentType = try std.fmt.allocPrint(self._allocator, "Content-Type: {s}\r\n", .{self.contentType.?});
@@ -68,5 +70,6 @@ pub const Response = struct {
         if (self.body != null) {
             self._allocator.free(self.body.?);
         }
+        self.headers.deinit();
     }
 };

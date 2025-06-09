@@ -93,7 +93,7 @@ pub const Server = struct {
         var response = Response.init(self._allocator);
         const time = datetime.datetime.Datetime.now();
 
-        try stdout.print("[{:0>2}-{:0>2}-{:0>4} {:0>2}:{:0>2}:{:0>2}] {s} {s}\n", .{
+        try stdout.print("[{:0>2}/{:0>2}/{:0>4} {:0>2}:{:0>2}:{:0>2}] {s} {s}\n", .{
             time.date.day,
             time.date.month,
             time.date.year,

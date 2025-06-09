@@ -12,7 +12,9 @@ pub const Request = struct {
     method: HTTPMethod,
     path: []const u8,
     body: []const u8,
-    params: std.ArrayList([]const u8),
+    params: std.StringHashMap([]const u8),
+    cookies: std.StringHashMap([]const u8),
+    headers: std.StringHashMap([]const u8),
     /// Inherited from [`Server`] if it's created by [`Server`]
     _allocator: mem.Allocator,
 
@@ -30,33 +32,53 @@ pub const Request = struct {
         var userAgent: []const u8 = "";
         var method: HTTPMethod = .GET;
         var path: []const u8 = "";
-        const params = std.ArrayList([]const u8).init(allocator);
+        const params = std.StringHashMap([]const u8).init(allocator);
+        var headers = std.StringHashMap([]const u8).init(allocator);
+        var cookies = std.StringHashMap([]const u8).init(allocator);
 
         while (headerToken.next()) |token| {
             if (mem.startsWith(u8, token, "User-Agent:")) {
-                var splitToken = mem.splitSequence(u8, token, ":");
+                var splitToken = mem.splitSequence(u8, token, ": ");
+                _ = splitToken.next().?;
                 userAgent = splitToken.next().?;
-            }
-            if (mem.startsWith(u8, token, "GET")) {
+            } else if (mem.startsWith(u8, token, "Cookie:")) {
+                var splitToken = mem.splitSequence(u8, token, ": ");
+                const cookie = splitToken.next().?;
+                var cookieTokens = mem.splitSequence(u8, cookie, "; ");
+                while (cookieTokens.next()) |cookieToken| {
+                    var pairToken = mem.splitSequence(u8, cookieToken, "=");
+                    const key = pairToken.next();
+                    const value = pairToken.next();
+
+                    try cookies.put(key.?, value.?);
+                }
+            } else if (mem.startsWith(u8, token, "GET")) {
                 var splitToken = mem.splitSequence(u8, token, " ");
-                path = splitToken.next().?;
+                _ = splitToken.next().?;
                 path = splitToken.next().?;
                 method = .GET;
-            }
-            if (mem.startsWith(u8, token, "POST")) {
+            } else if (mem.startsWith(u8, token, "POST")) {
                 var splitToken = mem.splitSequence(u8, token, " ");
                 path = splitToken.next().?;
                 method = .POST;
-            }
-            if (mem.startsWith(u8, token, "PATCH")) {
+            } else if (mem.startsWith(u8, token, "PATCH")) {
                 var splitToken = mem.splitSequence(u8, token, " ");
                 path = splitToken.next().?;
                 method = .PATCH;
-            }
-            if (mem.startsWith(u8, token, "DELETE")) {
+            } else if (mem.startsWith(u8, token, "DELETE")) {
                 var splitToken = mem.splitSequence(u8, token, " ");
                 path = splitToken.next().?;
                 method = .DELETE;
+            }
+
+            if (mem.containsAtLeast(u8, token, 1, ":")) {
+                var splitToken = mem.splitSequence(u8, token, ": ");
+                const key = splitToken.next();
+                const value = splitToken.next();
+                if (key == null or value == null) {
+                    continue;
+                }
+                try headers.put(key.?, value.?);
             }
         }
 
@@ -67,6 +89,8 @@ pub const Request = struct {
             .method = method,
             .body = body,
             .params = params,
+            .headers = headers,
+            .cookies = cookies,
             ._allocator = allocator,
         };
     }
