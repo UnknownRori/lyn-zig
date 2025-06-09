@@ -30,7 +30,7 @@ Example hello world
 
 ```zig
 const std = @import("std");
-const lib = @import("lyn_zig_lib");
+const lib = @import("lyn");
 
 const HelloWorldController = struct {
     message: []const u8,
