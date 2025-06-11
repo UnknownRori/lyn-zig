@@ -27,14 +27,14 @@ pub const Request = struct {
         var split = mem.splitSequence(u8, buffer, "\r\n\r\n");
 
         const header = split.peek().?;
-        const headerStr = try createStringFromSlice(allocator, header);
-        var headerToken = mem.splitSequence(u8, headerStr.items, "\r\n");
+        var headerToken = mem.splitSequence(u8, header, "\r\n");
         var userAgent: []const u8 = "";
         var method: HTTPMethod = .GET;
         var path: []const u8 = "";
         const params = std.StringHashMap([]const u8).init(allocator);
         var headers = std.StringHashMap([]const u8).init(allocator);
         var cookies = std.StringHashMap([]const u8).init(allocator);
+        std.debug.print("{s}\n", .{buffer});
 
         while (headerToken.next()) |token| {
             if (mem.startsWith(u8, token, "User-Agent:")) {
@@ -43,6 +43,7 @@ pub const Request = struct {
                 userAgent = splitToken.next().?;
             } else if (mem.startsWith(u8, token, "Cookie:")) {
                 var splitToken = mem.splitSequence(u8, token, ": ");
+                _ = splitToken.next();
                 const cookie = splitToken.next().?;
                 var cookieTokens = mem.splitSequence(u8, cookie, "; ");
                 while (cookieTokens.next()) |cookieToken| {
@@ -93,6 +94,12 @@ pub const Request = struct {
             .cookies = cookies,
             ._allocator = allocator,
         };
+    }
+
+    pub fn deinit(self: *Self) void {
+        self.cookies.deinit();
+        self.headers.deinit();
+        self.params.deinit();
     }
 };
 

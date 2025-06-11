@@ -90,7 +90,11 @@ pub const Server = struct {
 
     fn handleRequest(self: *Self, stream: net.Stream, buffer: []const u8) !void {
         var request = try Request.parseFromBuffer(self._allocator, buffer);
+        defer request.deinit();
+
         var response = Response.init(self._allocator);
+        defer response.deinit();
+
         const time = datetime.datetime.Datetime.now();
 
         try stdout.print("[{:0>2}/{:0>2}/{:0>4} {:0>2}:{:0>2}:{:0>2}] {s} {s}\n", .{
@@ -106,6 +110,5 @@ pub const Server = struct {
         try self._onRequest(self._ctx, &request, &response);
 
         try response.send(stream);
-        response.deinit();
     }
 };

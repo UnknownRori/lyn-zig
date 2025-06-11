@@ -32,3 +32,17 @@ pub const Datetime = @import("datetime").datetime;
 // Sec-Fetch-Dest: empty
 // Sec-Fetch-Mode: cors
 // Sec-Fetch-Site: same-origin
+
+test "Parse Request" {
+    const std = @import("std");
+    const expect = std.testing.expect;
+
+    const request = ("Host: localhost:8000\r\n" ++
+        "User-Agent: Testing\r\n\r\n");
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+    const req = try Request.parseFromBuffer(allocator, request);
+    try expect(std.mem.eql(u8, req.userAgent, "Testing"));
+}

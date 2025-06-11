@@ -66,7 +66,7 @@ pub const Response = struct {
     }
 
     /// Deallocate any allocation made and cause this entire data to be invalidate.
-    pub fn deinit(self: Self) void {
+    pub fn deinit(self: *Self) void {
         if (self.body != null) {
             self._allocator.free(self.body.?);
         }
