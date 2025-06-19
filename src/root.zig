@@ -43,6 +43,9 @@ test "Parse Request" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
-    const req = try Request.parseFromBuffer(allocator, request);
+
+    var req = try Request.parseFromBuffer(allocator, request);
+    defer req.deinit();
+
     try expect(std.mem.eql(u8, req.userAgent, "Testing"));
 }
