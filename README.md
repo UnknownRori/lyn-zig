@@ -4,6 +4,15 @@ Lyn is a simple minimalistic web framework inspired by Express.js and Laravel in
 the point of this framework is to make development of backend or maybe frontend in Zig to be
 not very painful.
 
+## Features
+
+- [x] Controller
+- [x] Router
+- [ ] Middleware
+- [ ] Session
+- [ ] Cache
+- [ ] Route Grouping
+
 ## Getting Started
 
 Make sure you have Zig 0.14
