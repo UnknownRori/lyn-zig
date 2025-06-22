@@ -93,11 +93,13 @@ const Handler = struct {
 
 pub const Router = struct {
     _routes: std.ArrayList(Handler),
+    _not_found: ?Handler,
     _allocator: mem.Allocator,
     const Self = @This();
 
     pub fn init(allocator: mem.Allocator) Self {
         return Self{
+            ._not_found = null,
             ._routes = std.ArrayList(Handler).init(allocator),
             ._allocator = allocator,
         };
@@ -105,6 +107,11 @@ pub const Router = struct {
 
     pub fn deinit(self: Self) void {
         self._routes.deinit();
+    }
+
+    pub fn set_404(self: *Self, instance: *anyopaque, handler: anytype) !void {
+        const handlerObj = try Handler.init(root.HTTPMethod.GET, "", instance, handler);
+        self._not_found = handlerObj;
     }
 
     pub fn get(self: *Self, path: []const u8, instance: *anyopaque, handler: anytype) !void {
@@ -130,9 +137,17 @@ pub const Router = struct {
     pub fn resolve(self: *Self, req: *root.Request, res: *root.Response) !void {
         for (self._routes.items) |route| {
             if (route.isMatch(req)) {
-                try route.call(req, res);
+                return try route.call(req, res);
             }
         }
-        // Call 404
+
+        if (self._not_found != null) {
+            return try self._not_found.?.call(req, res);
+        }
+
+        _ = try res.json(root.HTTPStatus.NotFound, .{
+            .type = "error",
+            .message = "Not found",
+        });
     }
 };
