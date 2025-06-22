@@ -34,7 +34,6 @@ pub const Request = struct {
         const params = std.StringHashMap([]const u8).init(allocator);
         var headers = std.StringHashMap([]const u8).init(allocator);
         var cookies = std.StringHashMap([]const u8).init(allocator);
-        std.debug.print("{s}\n", .{buffer});
 
         while (headerToken.next()) |token| {
             if (mem.startsWith(u8, token, "User-Agent:")) {
