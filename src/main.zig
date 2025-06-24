@@ -23,6 +23,8 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
+    const middlewareProvider = lib.MiddlewareProvider.init(allocator);
+
     var helloWorldController = HelloWorldController.init("Hello World!");
     var pingPongController = HelloWorldController.init("Ping Pong");
 
@@ -34,6 +36,7 @@ pub fn main() !void {
         .port = 8000,
         .host = "127.0.0.1",
         .router = router,
+        .middleware = middlewareProvider,
     });
     try server.listen();
 

@@ -9,18 +9,21 @@ pub const AppConfig = struct {
     host: []const u8,
     port: u16,
     router: root.Router,
+    middleware: root.MiddlewareProvider,
 };
 
 pub const App = struct {
     _server: root.Server,
     _router: root.Router,
     _allocator: mem.Allocator,
+    _middlewareProvider: root.MiddlewareProvider,
 
     const Self = @This();
 
     pub fn init(allocator: mem.Allocator, config: AppConfig) !Self {
         var app = Self{
             ._router = config.router,
+            ._middlewareProvider = config.middleware,
             ._allocator = allocator,
             ._server = undefined,
         };
