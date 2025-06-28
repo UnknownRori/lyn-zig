@@ -7,14 +7,12 @@ const BoundHandler = *fn (*const anyopaque, *root.Request, *root.Response) anyer
 
 pub const Handler = struct {
     /// Function pointer of the instance
-    method: root.HTTPMethod,
-    path: []const u8,
     instance: usize,
     handler: usize,
 
     const Self = @This();
 
-    pub fn init(method: root.HTTPMethod, path: []const u8, instance: *anyopaque, handler: anytype) !Handler {
+    pub fn init(instance: *anyopaque, handler: anytype) !Handler {
         // INFO : Inspired from https://github.com/zigzap/zap/blob/master/src/router.zig
         comptime {
             const handlerInfo = @typeInfo(@TypeOf(handler));
@@ -54,32 +52,9 @@ pub const Handler = struct {
         }
 
         return Self{
-            .path = path,
             .instance = @intFromPtr(instance),
             .handler = @intFromPtr(&handler),
-            .method = method,
         };
-    }
-
-    pub fn isMatch(self: Self, req: *root.Request) bool {
-        if (self.method != req.method) return false;
-
-        var handlerUrl = std.mem.splitSequence(u8, self.path, "/");
-        var requestUrl = std.mem.splitSequence(u8, req.path, "/");
-
-        while (requestUrl.next()) |reqUrl| {
-            const handUrl = handlerUrl.next();
-            if (handUrl == null) return false;
-
-            if (std.mem.eql(u8, handUrl.?, reqUrl)) {
-                //
-            } else if (std.mem.startsWith(u8, handUrl.?, "{") and std.mem.endsWith(u8, handUrl.?, "}")) {
-                // Parse the params
-            } else {
-                return false;
-            }
-        }
-        return true;
     }
 
     pub fn call(self: Self, req: *root.Request, res: *root.Response) !void {

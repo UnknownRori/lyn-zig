@@ -19,4 +19,13 @@ pub const MiddlewareProvider = struct {
             ._allocator = allocator,
         };
     }
+
+    pub fn register(self: *Self, name: []const u8, instance: *anyopaque, handler: anytype) !void {
+        const handlerObj = try Handler.init(instance, handler);
+        try self._middleware.put(name, handlerObj);
+    }
+
+    pub fn get(self: Self, name: []const u8) ?Handler {
+        return self._middleware.get(name);
+    }
 };

@@ -48,6 +48,6 @@ pub const App = struct {
     fn handler(ctx: *anyopaque, req: *root.Request, res: *root.Response) anyerror!void {
         const self: *Self = @alignCast(@ptrCast(ctx));
 
-        try self._router.resolve(req, res);
+        try self._router.resolve(self._middlewareProvider, req, res);
     }
 };
