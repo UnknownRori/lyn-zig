@@ -10,7 +10,7 @@ const Route = rt.Route;
 const MiddlewareProvider = root.MiddlewareProvider;
 
 pub const RouteConfig = struct {
-    middleware: ?[][]const u8,
+    middleware: std.ArrayList([]const u8),
 };
 
 pub const Router = struct {
@@ -35,8 +35,8 @@ pub const Router = struct {
     pub fn add(self: *Self, method: root.HTTPMethod, path: []const u8, instance: *anyopaque, handler: anytype, routeConfig: ?RouteConfig) !void {
         const handlerObj = try Handler.init(instance, handler);
         var routeObj = try Route.init(self._allocator, method, path, handlerObj);
-        if (routeConfig != null and routeConfig.?.middleware != null) {
-            for (routeConfig.?.middleware.?) |middlewareName| {
+        if (routeConfig != null) {
+            for (routeConfig.?.middleware.items) |middlewareName| {
                 try routeObj.middleware(middlewareName);
             }
         }

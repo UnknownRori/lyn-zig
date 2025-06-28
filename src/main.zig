@@ -44,7 +44,10 @@ pub fn main() !void {
     var pingPongController = HelloWorldController.init("Ping Pong");
 
     var router = lib.Router.init(allocator);
-    try router.get("/", &helloWorldController, HelloWorldController.hello, null);
+    var middleware = std.ArrayList([]const u8).init(allocator);
+    try middleware.append("user-agent");
+
+    try router.get("/", &helloWorldController, HelloWorldController.hello, .{ .middleware = middleware });
     try router.get("/ping", &pingPongController, HelloWorldController.hello, null);
 
     var server = try lib.App.init(allocator, lib.AppConfig{
