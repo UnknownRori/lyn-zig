@@ -4,6 +4,7 @@ const responseLib = @import("http/response.zig");
 const httpLib = @import("http/http.zig");
 const appLib = @import("app/app.zig");
 const routerLib = @import("app/router.zig");
+const middlewareLib = @import("app/middleware.zig");
 
 pub const Server = serverLib.Server;
 pub const ServerConfig = serverLib.ServerConfig;
@@ -16,6 +17,7 @@ pub const HTTPStatus = httpLib.HTTPStatus;
 pub const App = appLib.App;
 pub const AppConfig = appLib.AppConfig;
 pub const Router = routerLib.Router;
+pub const MiddlewareProvider = middlewareLib.MiddlewareProvider;
 
 // Re Export Used Library
 pub const Datetime = @import("datetime").datetime;
